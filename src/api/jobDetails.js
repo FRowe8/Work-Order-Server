@@ -12,19 +12,36 @@ const redis = new Redis({
 const router = express.Router();
 
 const schema = Joi.object().keys({
-  site: Joi.string().alphanum().min(1).max(100).required(),
-  description: Joi.string().alphanum().min(1).max(500).required,
+  site: Joi.string().min(1).max(500).required(),
+  description: Joi.string().min(1).max(500).required(),
   latitude: Joi.number().min(-90).max(90).required(),
   longitude: Joi.number().min(-180).max(180).required(),
 });
 
+const getWorkOrderData = async () => {
+  let cacheEntry = await redis.get("workOrderData");
+  // check if we have cached value in redis
+
+  // if there is a match then return the cache
+
+  if (cacheEntry) {
+    cacheEntry = JSON.parse(cacheEntry);
+  }
+
+  //otherwise we need to trigger a call to the database
+  return { ...cacheEntry };
+};
+
 router.get("/", (req, res) => {
-  res.json([]);
+  const result = getWorkOrderData()
+    .then((response) => response)
+    .then((data) => data);
+  res.json(result);
 });
 
 router.post("/", (req, res, next) => {
-  const result = Joi.validate(req.body, schema);
-  if (result.error === null) {
+  const result = schema.validate(req.body);
+  if (!result.error) {
     const { site, description, latitude, longitude } = req.body;
     const jobDetails = {
       site,
@@ -35,8 +52,10 @@ router.post("/", (req, res, next) => {
     };
     //add code
     // add current time
-    // insert into DB
-    res.json([]);
+    // insert into redis store
+
+    redis.set("workOrderData", JSON.stringify(jobDetails));
+    res.json([result]);
   } else {
     next(result.error);
   }
