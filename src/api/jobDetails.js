@@ -35,7 +35,7 @@ router.get("/", (req, res) => {
       if (err) {
         return res.status(503).json("Error acquiring client", err.stack);
       }
-      client.query(`Select * from workorders`, (err, result) => {
+      client.query(`Select * from customers`, (err, result) => {
         release();
         if (err) {
           return res.status(500).json("Error executing query", err.stack);
