@@ -1,13 +1,6 @@
 const express = require("express");
 const Joi = require("joi");
-
-const Redis = require("ioredis");
-
-const redis = new Redis({
-  port: "15953",
-  host: "redis-15953.c293.eu-central-1-1.ec2.cloud.redislabs.com",
-  password: process.env.REDIS_PASSWORD,
-});
+const { Pool, Client } = require("pg");
 
 const router = express.Router();
 
@@ -18,25 +11,43 @@ const schema = Joi.object().keys({
   longitude: Joi.number().min(-180).max(180).required(),
 });
 
-const getWorkOrderData = async () => {
-  let cacheEntry = await redis.get("workOrderData");
-  // check if we have cached value in redis
+const pool = new Pool({
+  user: process.env.PGUSER,
+  host: process.env.PGHOST,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
 
-  // if there is a match then return the cache
-
-  if (cacheEntry) {
-    cacheEntry = JSON.parse(cacheEntry);
-  }
-
-  //otherwise we need to trigger a call to the database
-  return { ...cacheEntry };
-};
+// pools will use environment variables
+// for connection information
+const client = new Client({
+  user: process.env.PGUSER,
+  host: process.env.PGHOST,
+  database: process.env.PGDATABASE,
+  password: process.env.PGPASSWORD,
+  port: process.env.PGPORT,
+});
 
 router.get("/", (req, res) => {
-  const result = getWorkOrderData()
-    .then((response) => response)
-    .then((data) => data);
-  res.json(result);
+  (async () => {
+    pool.connect((err, client, release) => {
+      if (err) {
+        return res.status(503).json("Error acquiring client", err.stack);
+      }
+      client.query(`Select * from workorders`, (err, result) => {
+        release();
+        if (err) {
+          return res.status(500).json("Error executing query", err.stack);
+        }
+        return res.status(200).json(result.rows);
+      });
+    });
+  })().catch((err) =>
+    setImmediate(() => {
+      throw err;
+    })
+  );
 });
 
 router.post("/", (req, res, next) => {
