@@ -52,5 +52,5 @@ jobs:
         with:
           app-name: 'Work-Order-Mapping-Server'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_9CB7F8A5BC39409087A49F74B01BA1B9 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_09720A91C70246C196006537352A1BF0 }}
           package: .
