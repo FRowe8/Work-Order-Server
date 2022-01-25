@@ -17,13 +17,3 @@ describe("GET /api/v1", () => {
       );
   });
 });
-
-describe("GET /api/v1/jobDetails", () => {
-  it("responds with a json message", (done) => {
-    request(app)
-      .post("/api/v1/jobDetails")
-      .set("Accept", "application/json")
-      .expect("Content-Type", /json/)
-      .expect(200, ["😀", "😳", "🙄"], done);
-  });
-});
